@@ -1,0 +1,239 @@
+---
+title: "Homework 5"
+format:
+  html:
+    toc: true
+    toc-location: left
+    code-fold: true
+    theme: yeti
+execute:
+  message: false
+  warning: false
+---
+
+## Introduction
+
+## Methods
+
+## Results
+
+**References**
+
+set up libraries
+
+```{r}
+library(tidyverse)
+library(here)
+library(janitor)
+library(ggeffects)
+library(performance)
+library(naniar)
+library(flextable)
+library(car)
+library(broom)
+library(corrplot)
+library(AICcmodavg)
+library(GGally)
+library(MuMIn)
+```
+
+read in data
+
+```{r}
+plants <- read_csv(here("data", "hf109-01-sarracenia.csv")) %>% 
+          #cleans names and makes column names lowercase
+          clean_names %>% 
+          #select columns of interest
+          select(totmass, species, feedlevel, sla, chlorophyll, amass, num_lvs, num_phylls)
+```
+
+visualize missing data
+
+```{r}
+gg_miss_var(plants)   +
+  labs(caption = "Missing Variables for the Sarracenia Dataset") +
+  theme(plot.caption = element_text(hjust = 0.6))
+```
+
+subsetting data, dropping NA values
+
+```{r}
+plant_subset <- plants %>% 
+  drop_na(sla, chlorophyll, amass, num_lvs, num_phylls)
+```
+
+# Creating a correlation plot:
+
+"(example writing) To determine the relationships between numerical variables in our dataset, we calculated Pearsons r and visually represented correlation using a correlation plot."
+
+```{r correlation-plot}
+#Calculate Pearson's r for numerics
+plant_correlation <- plant_subset %>% 
+  select(feedlevel:num_phylls) %>% 
+  cor(method = "pearson")
+
+#Correlation analysis plot and changing shape of cells
+corrplot(plant_correlation, method = "ellipse", addCoef.col = "black") 
+  
+labs(caption = "Pearson's correlation between Sarracenia characteristics and biomass")
+
+#weak correlation seen between 
+```
+
+\# "Create a plot of each variable compared against the others"
+
+not correlation????
+
+```{r pairs-plot}
+plant_subset %>% 
+  select(totmass:num_phylls) %>% 
+  ggpairs() + labs(caption ="?")
+```
+
+\# Starting regression here:
+
+"(example) To determine how species and physiological characteristics predict biomass, we fit multiple linear models."
+
+We fit multiple linear models to see if the species and the characteristics of them may predict biomass. There was a linear model created for each variable and for a null model to compare it to.
+
+```{r null-and-full-models}
+null <- lm(totmass ~ 1, data = plant_subset)
+full <- lm(totmass ~ species + feedlevel + sla + chlorophyll + amass + num_lvs + num_phylls, data = plant_subset)
+
+null 
+full
+```
+
+\# Diagnostics
+
+Using the linear models we just created, we will plot them using diagnostic plots to look for normality and homoskedasticity of residuals.
+
+"The Residuals vs. fitted plot shows us if the errors or residuals in the relationship are homoscedastic, in other words whether or not there is a constant variance. The data does not look homoscedastic because the errors plotted are not mostly constant throughout the range of x-axis values, both the data and the outliers are not evenly and randomly distributed across the horizontal line
+
+1.  The Normal QQ plot shows us if the errors are normally distributed, with the straight line through the plot I would assume yes it is normally distibuted.
+2.  The scale location plot also checks for homoscedasticy of variance but instead uses square root of standardized residuals. The variance of residuals is not evenly and not randomly distributed so I would also say that the residuals are not homoscedastic.
+3.  The residuals versus leverage plot (also called Cook's model) helps us check if outliers are influencing our model estimates by measuring the influence of a single observation on the model. Since there are several points labeled in the graph, I would say yes outliers are influencing"
+
+```{r full-diagnostics}
+par(mfrow = c(2, 2))
+plot(full)
+```
+
+"We also tested for normality using the Shapiro-Wilk test (null hypothesis: variable of interest (i.e. the residuals) are normally distributed).
+
+We tested for heteroskedasticity using the Breusch-Pagan test (null hypothesis: variable of interest has constant variance)."
+
+```{r}
+check_normality(full)
+
+check_heteroscedasticity(full)
+```
+
+```{r model-logs}
+null_log <- lm(log(totmass) ~ 1, data = plant_subset)
+
+full_log <- lm(log(totmass) ~ species + feedlevel + sla + chlorophyll + amass + num_lvs + num_phylls, data = plant_subset)
+
+plot(full_log)
+
+check_normality(full_log)
+
+check_heteroscedasticity(full_log)
+```
+
+"Evaluate multicollinearity:"
+
+```{r calculate-vif}
+car::vif(full_log)
+```
+
+"We evaluated multi collinearity by calculating generalized variance inflation factor and determined that...
+
+try some more models: addressing the question: what set of predictor variables best explains the response?"
+
+```{r}
+model2_log <- lm(log(totmass) ~ species, data = plant_subset)
+model3_log <- lm(log(totmass) ~ amass + chlorophyll + feedlevel + species, data = plant_subset)
+model4_log <- lm(log(totmass) ~ species + chlorophyll + sla, data = plant_subset)
+```
+
+"check assumptions for model 2:"
+
+```{r}
+plot(model2_log)
+plot(model3_log)
+plot(model4_log)
+
+check_normality(model2_log)
+
+check_heteroscedasticity(model2_log) 
+
+check_normality(model3_log)
+
+check_heteroscedasticity(model3_log)
+
+check_normality(model4_log)
+
+check_heteroscedasticity(model4_log)
+
+```
+
+"compare models using Akaike's Information criterion (AIC) values:"
+
+```{r}
+AICc(full_log)
+
+AICc(model2_log)
+
+AICc(model3_log)
+
+AICc(model4_log)
+
+MuMIn::AICc(full_log, model2_log, null_log, model3_log, model4_log)
+
+MuMIn::model.sel(full_log, model2_log, null_log, model3_log, model4_log)
+```
+
+"we compared models using AIC and chose the model with the lowest value, which was... the full model
+
+\# Results
+
+We found that the \_\_\_\_\_\_ model including \_\_\_ \_\_\_\_ \_\_ predictors best predicted \_\_\_\_\_\_\_ (model summary)."
+
+```{r}
+summary(full_log)
+
+table <- tidy(full_log, conf.int = TRUE, exponentiate = TRUE) %>% 
+
+  # change the p-value numbers if they're really small
+
+  # change the estmaes, standard error, and t-tstatistics to round to ___ digits
+
+  # using mutate
+
+  # make it into a flextable
+
+  flextable() %>% 
+
+  # fit it to the viewer
+
+  autofit()
+
+table
+```
+
+"use \`ggpredict()\` to backtranform estimates"
+
+```{r}
+model_pred <- ggpredict(full_log, terms = "species", back.transform = TRUE)
+
+plot(ggpredict(full_log, terms = "species", back.transform = TRUE), add.data = TRUE)
+
+plot(ggpredict(full_log, terms = "chlorophyll", back.transform = TRUE), add.data = TRUE)
+
+plot(ggpredict(full_log, terms = "sla", back.transform = TRUE), add.data = TRUE)
+
+model_pred
+
+#species best predicts out of all variables if you only use one
+```
