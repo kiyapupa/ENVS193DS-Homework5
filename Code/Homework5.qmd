@@ -225,7 +225,7 @@ table <- tidy(model5_log, conf.int = TRUE, exponentiate = TRUE) %>%
 #using gg predict to backtransform estimates and model one variable. Using full log dataset and using species due to it's high effect on other 
 model_pred <- ggpredict(model5_log, terms = "species", back.transform = TRUE)
 
-plot(ggpredict(model5_log, terms = "chlorophyll", back.transform = TRUE), add.data = TRUE) + labs(caption ="Chlorophyll as a Predictor Variable for Biomass") + theme(plot.caption = element_text(hjust = 0.5))
+plot(ggpredict(model5_log, terms = "chlorophyll", back.transform = TRUE), add.data = TRUE) + theme_classic() +  labs(x = "Chlorophyll (mg/g)" , y = "Total Biomass", caption ="Chlorophyll as a Predictor Variable for Biomass") + theme(plot.caption = element_text(hjust = 0.5))
 
 #Extended caption: Chlorophyll can be used to predict biomass on a per species basis in the genus Sarracenia.
 model_pred
