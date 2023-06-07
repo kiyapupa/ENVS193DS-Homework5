@@ -11,16 +11,12 @@ execute:
   warning: false
 ---
 
-## Intro 
+## Introduction
 
-Sarracenia are a species of carnivorous pitcher plants, which are of high interests to scientists due to their unique capacity to attract insects for feeding from their smell (Lyczko et al). In addition, certain species of Sarracenia such as Sarracenia pupurea are used in ethnobotany to fight illnesses such as type 2 diabetes and cancer (Huang et al). Carnivorous plants such as Sarracenia are also an ideal species for studying plant molecular genetics and evolutionary ecology because of the convergent traits they possess for digesting prey (Ellison et al). It is important to predict biomass from  physiological, taxonomic, and morphological characteristics because we may be able to tell how big any species of Sarracenia will be based on  how big the leaves are, how much they are fed, what the species is, or the chlorophyll content. This will help us understand what factors are important in determining how big a plant gets, so we can understand what environment certain plants are thriving in and also understand the necessary conditions to produce a certain size of pitcher plant. Since these plants are often used in research it is important to be able to breed them correctly and also understand how species relates to biomass.
-
-The question being addressed in the following analysis is whether or not one variable or a combination of the variables within a subset of the dataset can be used to predict the biomass of the plant. We will be checking if the errors for each model are homoscedastic and normally distributed. The null hypothesis being tested in the following analysis is that no variables in the model will predict the biomass, and the alternative hypothesis is that at least one variable in the model will predict biomass.   
-
-
-set up libraries
+Sarracenia are a species of carnivorous pitcher plants, which are of high interest to scientists due to their unique capacity to attract insects from their smell for feeding on (Lyczko et al). In addition, certain species of Sarracenia such as Sarracenia pupurea are used in ethnobotany to fight illnesses such as type 2 diabetes and cancer (Huang et al). Carnivorous plants such as Sarracenia are also an ideal species for studying plant molecular genetics and evolutionary ecology because of the convergent traits they possess for digesting prey (Ellison et al). It is important to predict biomass from  physiological, taxonomic, and morphological characteristics because we may be able to tell how big any species of Sarracenia will be based on how big the leaves are, how much they are fed, what the species is, or the chlorophyll content. This will help us understand what factors are important in determining how big a plant gets, so we can understand what environment certain plants are thriving in and also understand the necessary conditions to produce a certain size of pitcher plant. Since these plants are often used in research, it is important to be able to breed them correctly and also understand how species relates to biomass. The question being addressed in the following analysis is whether or not one variable or a combination of the variables within a subset of the dataset can be used to predict the biomass of the plant. We will be checking if the errors for each model are homoscedastic and normally distributed. The null hypothesis being tested in the following analysis is that no variables in the model will predict the biomass, and the alternative hypothesis is that at least one variable in the model will predict biomass.   
 
 ```{r}
+#set up libraries
 library(tidyverse)
 library(here)
 library(janitor)
@@ -38,13 +34,12 @@ library(MuMIn)
 
 ## Methods
 
-a. Sampling Methods
-
-To sample the necessary data, two plants from each Sarracenia species were assigned to six feeding levels, with 120 total plants(Ellison et al). The design for the feeding levels per feeding ranged from 0-0.25g of ground wasps for small species, 0-0.5g for intermediate sized, and 0-1g for large species (Ellison et al). The size above ground and Amass (mass-based light-saturated photosynthetic rate of youngest leaf) was taken before treatments, and then the plants were fed once a week for seven weeks (Ellison et al). 
+To sample the necessary data, two plants from each Sarracenia species were assigned to six feeding levels, with 120 total plants (Ellison et al). The design for the feeding levels ranged from 0-0.25g of ground wasps for small species, 0-0.5g for intermediate sized, and 0-1g for large species (Ellison et al). The size above ground and Amass (mass-based light-saturated photosynthetic rate of youngest leaf) was taken before treatments, and then the plants were fed once a week for seven weeks (Ellison et al). 
 
 The data was cleaned to get rid of unnecessary characters and to make column names lower case. The columns of interest for predictor variables were then selected (totmass, species, feedlevel, sla, chlorophyll, amass, num_lvs, num_phylls).
 
 ```{r}
+#read in csv using here function
 plants <- read_csv(here("data", "hf109-01-sarracenia.csv")) %>% 
           #cleans names and makes column names lowercase
           clean_names %>% 
@@ -80,7 +75,7 @@ plant_correlation <- plant_subset %>%
 corrplot(plant_correlation, method = "ellipse", addCoef.col = "black")
 title(sub="Pearson's correlation between Sarracenia characteristics and biomass")
 
-#caption, cannot connect caption argument to corr plot
+#caption, cannot connect caption argument to corr plot, tried to add it using different function but couldn't adjust margin
 labs(caption = "Pearson's correlation between Sarracenia characteristics and biomass")
 ```
 
@@ -105,7 +100,7 @@ null
 full
 ```
 
-Using the linear models we just created, we will plot them using diagnostic plots to look for normality and homoskedasticity of residuals. The visual plots showed non-normality and homoskedasticity because the data in the residuals versus plotted is not evenly and randomly distibuted, there is outliers in the Normal QQ plot, the values is the scale location plot are not randomly and normally distributed, and Cook's model shows outliers are influencing our model. Non-normality was also tested statistically using the Shapiro-Wilk test and heteroskedasticiy was tested for using the Breusch-Pagan test, and both tests showed non-constant error variance and non-normality. 
+Using the linear models we just created, we will plot them using diagnostic plots to look for normality and homoskedasticity of residuals. The visual plots showed non-normality and homoskedasticity because the data in the residuals versus plotted is not evenly and randomly distibuted, there is outliers in the Normal QQ plot, the values in the scale location plot are not randomly and normally distributed, and Cook's model shows outliers are influencing our model. Non-normality was also tested statistically using the Shapiro-Wilk test and heteroskedasticiy was tested for using the Breusch-Pagan test, and both tests showed non-constant error variance and non-normality. 
 
 ```{r full-diagnostics}
 #set parameters for plot, splitting screen
@@ -150,20 +145,22 @@ Model 5 includes species, chlorophyll, and sla because even though no strong cor
 #shows how good of a predictor variable species is, not used in model discussion, necessary because of VIF
 model2_log <- lm(log(totmass) ~ species, data = plant_subset)
 
+#log model with chlorophyll, feed level, species
 model3_log <- lm(log(totmass) ~ chlorophyll + feedlevel + species, data = plant_subset) #second best, chlorophyll and feed level had high correlation
 
-model4_log <- lm(log(totmass) ~ species + sla + amass, data = plant_subset) #bc of correlation in perason's 
+#log model with species, sla, amass
+model4_log <- lm(log(totmass) ~ species + sla + amass, data = plant_subset) #bc of correlation in pearson's 
 
-model5_log <- lm(log(totmass) ~ species + chlorophyll + sla, data = plant_subset) #best, not sure why but it works
+#log model with chlorophyll, sla species
+model5_log <- lm(log(totmass) ~ species + chlorophyll + sla, data = plant_subset) #best
 ```
 
-Next, we evaluated multicollinearity of the full log and calculated the variance inflation factor, which shows how much one variable is influenced by the other independent variables. The value for the species is incredibly high so it should be included in each model in order to accurately predict so that it does not deeply impact the regression model. The other variables should not be too much of a cause for concern because they all have VIF values less than 5. 
+Next, we evaluated multicolinearity of the full log and calculated the variance inflation factor, which shows how much one variable is influenced by the other independent variables. The value for the species is incredibly high so it should be included in each model in order to accurately predict so that it does not deeply impact the regression model. The other variables should not be too much of a cause for concern because they all have VIF values less than 5. 
 
 ```{r calculate-vif}
 #evaluate multicollinearity by calculating variance inflation factor 
 car::vif(full_log)
 ```
-
 The 4 models were plotted and also were ran through a normality and homoscedasticity test in order to check our assumptions regarding the normal distribution and homoscedasticity of variance. All of the models passed the checks for being normally distributed and homoscedastic. 
 
 ```{r}
@@ -194,7 +191,10 @@ check_heteroscedasticity(model5_log)
 Models were then compared using Akaike's Information criterion (AIC) values, which gives a gauge of how much a model predicts a given variable, but only in relation to the other variables. 
 
 ```{r}
+#calculating AICc for each model created and for the full model
 AICc(full_log)
+
+AICc(null_log)
 
 AICc(model2_log)
 
@@ -204,50 +204,48 @@ AICc(model4_log)
 
 AICc(model5_log)
 
+#comparing the AICc values across allmodels with null as control with AICc and df table
 MuMIn::AICc(full_log, model2_log, null_log, model3_log, model4_log, model5_log)
 
+#making model selection tables
 MuMIn::model.sel(full_log, model2_log, null_log, model3_log, model4_log, model5_log)
 ```
 Using the AIC, we compared models and chose the value with the lowest value which was model 5. The actual lowest value was full log but since we wanted a subset of models that has the lowest explanatory values, model 5 is the best choice. Model 3 and Model 4 also have low values to predict biomass but strong as good as 5. The null value for AIC serves as a control for when nothing is predicted to compare to, and with model 2 also having a small value we can see that species is very important in biomass prediction. 
 
-We found that Model 5 including the species, chlorophyll, and sla predictors best predicted biomass. The errors are normally distributed and homoskedastic, which can be seen in the table below. 
+We found that Model 5 including the species, chlorophyll, and sla predictors best predicted biomass. The errors are normally distributed and homoscedastic, which can be seen in the table below. 
 
 The estimate values of 1.004 for chlorophyll and 0.998 for sla show that there is highly linear relationship between total mass and these two variables per species. The low values for standard error for both .001 show that there is not a large deviance from the estimates to the real data which further shows strong prediction. The respect statistic value's deviance from one for chlorophyll and sla (3.372 and -1.923) also shows strong prediction. 
 
 ```{r}
+#summarize the model
 summary(model5_log)
 
+#create table out of summary 
 table <- tidy(model5_log, conf.int = TRUE, exponentiate = TRUE) %>% 
-#change low p-values, change all values to round to a specified number or digits using mutate function
+#change low p-values to .001, change all values to round to 3 digits using mutate function
   mutate(statistic = round(statistic, digits = 3)) %>%
   mutate(std.error = round(std.error, digits = 3)) %>%
   mutate(conf.low = round(conf.low, digits = 3)) %>%
   mutate(conf.high = round(conf.high, digits = 3)) %>%
   mutate(estimate = round(estimate, digits = 3)) %>%
   mutate(p.value = case_when(p.value < 0.001 ~ "< 0.001")) %>% 
-  # make it into a flextable
 #create flextable
   flextable() %>% 
 #fitting table to viewer
   autofit()
-
 #show table 
-table
+  table
 ```
 
-I used gg predict to backtransform estimates and show a plot for a specified predictor variable, for which I chose chlorophyll. I chose this variable because even when used alone with species it still has a low AIC which shows it has a strong ability to predict biomass. When used on a per species basis there is a correlation for prediction
+I used gg predict to backtransform estimates and show a plot for a specified predictor variable, for which I chose chlorophyll. I chose this variable because even when used alone with species it still has a low AIC which shows it has a strong ability to predict biomass. When used on a per species basis there is a correlation that shows ability to predict biomass.
 
 Biologically, using chlorophyll a + b content (mg/g) of the youngest full-expanded leaf to predict biomass shows that there is a correlation between how much chlorophyll a plant has and what it's weight will be. The predictions were sorted by species, so we can assume for each species that if they have a singular plant has a certain chlorophyll content it can be used to assess how dense the plant will be. The graph also shows that as chlorophyll content increases in a species, so does biomass.
 
 ```{r}
 #using gg predict to backtransform estimates and model one variable. Using full log dataset and using species due to it's high effect on other 
-model_pred <- ggpredict(full_log, terms = "species", back.transform = TRUE)
+model_pred <- ggpredict(model5_log, terms = "species", back.transform = TRUE)
 
-plot(ggpredict(full_log, terms = "chlorophyll", back.transform = TRUE), add.data = TRUE) + labs(caption ="Chlorophyll as a Predictor Variable for Biomass") + theme(plot.caption = element_text(hjust = 0.2))
-
-plot(ggpredict(full_log, terms = "species", back.transform = TRUE), add.data = TRUE)
-
-plot(ggpredict(full_log, terms = "sla", back.transform = TRUE), add.data = TRUE)
+plot(ggpredict(model5_log, terms = "chlorophyll", back.transform = TRUE), add.data = TRUE) + labs(caption ="Chlorophyll as a Predictor Variable for Biomass") + theme(plot.caption = element_text(hjust = 0.5))
 
 #Extended caption: Chlorophyll can be used to predict biomass on a per species basis in the genus Sarracenia.
 model_pred
