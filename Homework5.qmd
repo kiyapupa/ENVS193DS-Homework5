@@ -11,13 +11,7 @@ execute:
   warning: false
 ---
 
-Ellison, A. and E. Farnsworth. 2021. Effects of Prey Availability on Sarracenia Physiology at Harvard Forest 2005 ver 18. Environmental Data Initiative. https://doi.org/10.6073/pasta/26b22d09279e62fd729ffc35f9ef0174 (Accessed 2023-06-07).
-
-Aaron M. Ellison, Nicholas J. Gotelli, Energetics and the evolution of carnivorous plants—Darwin's ‘most wonderful plants in the world’, Journal of Experimental Botany, Volume 60, Issue 1, January 2009, Pages 19–42, https://doi.org/10.1093/jxb/ern179
-
-Huang YH, Chiang WY, Chen PJ, Lin ES, Huang CY. Anticancer and Antioxidant Activities of the Root Extract of the Carnivorous Pitcher Plant Sarracenia purpurea. Plants (Basel). 2022 Jun 23;11(13):1668. doi: 10.3390/plants11131668. PMID: 35807620; PMCID: PMC9269354.
-
-Łyczko J, Twardowski JP, Skalny B, Galek R, Szumny A, Gruss I, Piesik D, Sendel S. Sarracenia alata (Alph.Wood) Alph.Wood Microcuttings as a Source of Volatiles Potentially Responsible for Insects' Respond. Molecules. 2021 Apr 21;26(9):2406. doi: 10.3390/molecules26092406. PMID: 33919120; PMCID: PMC8122457.
+## Intro 
 
 Sarracenia are a species of carnivorous pitcher plants, which are of high interests to scientists due to their unique capacity to attract insects for feeding from their smell (Lyczko et al). In addition, certain species of Sarracenia such as Sarracenia pupurea are used in ethnobotany to fight illnesses such as type 2 diabetes and cancer (Huang et al). Carnivorous plants such as Sarracenia are also an ideal species for studying plant molecular genetics and evolutionary ecology because of the convergent traits they possess for digesting prey (Ellison et al). It is important to predict biomass from  physiological, taxonomic, and morphological characteristics because we may be able to tell how big any species of Sarracenia will be based on  how big the leaves are, how much they are fed, what the species is, or the chlorophyll content. This will help us understand what factors are important in determining how big a plant gets, so we can understand what environment certain plants are thriving in and also understand the necessary conditions to produce a certain size of pitcher plant. Since these plants are often used in research it is important to be able to breed them correctly and also understand how species relates to biomass.
 
@@ -46,7 +40,7 @@ library(MuMIn)
 
 a. Sampling Methods
 
-To sample the necessary data, two plants from each Sarracenia species were assigned to six feeding levels, with 120 total plants(citation). The design for the feeding levels per feeding ranged from 0-0.25g of ground wasps for small species, 0-0.5g for intermediate sized, and 0-1g for large species (citation). The size above ground and Amass (mass-based light-saturated photosynthetic rate of youngest leaf) was taken before treatments, and then the plants were fed once a week for seven weeks (citation). 
+To sample the necessary data, two plants from each Sarracenia species were assigned to six feeding levels, with 120 total plants(Ellison et al). The design for the feeding levels per feeding ranged from 0-0.25g of ground wasps for small species, 0-0.5g for intermediate sized, and 0-1g for large species (Ellison et al). The size above ground and Amass (mass-based light-saturated photosynthetic rate of youngest leaf) was taken before treatments, and then the plants were fed once a week for seven weeks (Ellison et al). 
 
 The data was cleaned to get rid of unnecessary characters and to make column names lower case. The columns of interest for predictor variables were then selected (totmass, species, feedlevel, sla, chlorophyll, amass, num_lvs, num_phylls).
 
@@ -90,7 +84,7 @@ title(sub="Pearson's correlation between Sarracenia characteristics and biomass"
 labs(caption = "Pearson's correlation between Sarracenia characteristics and biomass")
 ```
 
-Next, a ggpairs plot was created for all columns in the plant subset in order to visualize respective relationships between variables. The visualization shows that???
+Next, a ggpairs plot was created for all columns in the plant subset in order to visualize respective relationships between variables. The visualization shows the relationship between sets of paired variables and also gives correlation values that are not relevant to the analysis but could show dependency between variables. 
 
 ```{r}
 plant_subset %>% 
@@ -218,10 +212,7 @@ Using the AIC, we compared models and chose the value with the lowest value whic
 
 We found that Model 5 including the species, chlorophyll, and sla predictors best predicted biomass. The errors are normally distributed and homoskedastic, which can be seen in the table below. 
 
-The chosen model wit
-
-Interpretation of your chosen model (1-3 sentences)
-
+The estimate values of 1.004 for chlorophyll and 0.998 for sla show that there is highly linear relationship between total mass and these two variables per species. The low values for standard error for both .001 show that there is not a large deviance from the estimates to the real data which further shows strong prediction. The respect statistic value's deviance from one for chlorophyll and sla (3.372 and -1.923) also shows strong prediction. 
 
 ```{r}
 summary(model5_log)
@@ -252,10 +243,22 @@ Biologically, using chlorophyll a + b content (mg/g) of the youngest full-expand
 #using gg predict to backtransform estimates and model one variable. Using full log dataset and using species due to it's high effect on other 
 model_pred <- ggpredict(full_log, terms = "species", back.transform = TRUE)
 
-plot(ggpredict(full_log, terms = "chlorophyll", back.transform = TRUE), add.data = TRUE) + labs(caption ="Chlorophyll as a Predictor Variable for Biomass")
+plot(ggpredict(full_log, terms = "chlorophyll", back.transform = TRUE), add.data = TRUE) + labs(caption ="Chlorophyll as a Predictor Variable for Biomass") + theme(plot.caption = element_text(hjust = 0.2))
+
+plot(ggpredict(full_log, terms = "species", back.transform = TRUE), add.data = TRUE)
+
+plot(ggpredict(full_log, terms = "sla", back.transform = TRUE), add.data = TRUE)
 
 #Extended caption: Chlorophyll can be used to predict biomass on a per species basis in the genus Sarracenia.
 model_pred
 ```
 
-References**
+## References
+
+Ellison, Aaron and Farnsworth, Elizabeth. "Effects of Prey Availability on Sarracenia Physiology at Harvard Forest 2005." Environmental Data Initiative, ver 18, 2021. https://doi.org/10.6073/pasta/26b22d09279e62fd729ffc35f9ef0174.
+
+Ellison, Aaron and Gotelli, Nicholas. "Energetics and the evolution of carnivorous plants—Darwin's ‘most wonderful plants in the world’." Journal of Experimental Botany, vol. 60, no. 1, 2009, pp 19–42. https://doi.org/10.1093/jxb/ern179
+
+Huang, Yen-Hua, et al. "Anticancer and Antioxidant Activities of the Root Extract of the Carnivorous Pitcher Plant Sarracenia purpurea." Plants, vol. 11, no. 13, 2022. doi: 10.3390/plants11131668.
+
+Łyczko, Jacek, et al. "Sarracenia alata (Alph.Wood) Alph.Wood Microcuttings as a Source of Volatiles Potentially Responsible for Insects' Respond." Molecules, vol. 15, no. 9, 2021. doi: 10.3390/molecules26092406. PMID: 33919120; PMCID: PMC8122457.
