@@ -11,7 +11,8 @@ execute:
   warning: false
 ---
 
-## Introduction
+Ellison, A. and E. Farnsworth. 2021. Effects of Prey Availability on Sarracenia Physiology at Harvard Forest 2005 ver 18. Environmental Data Initiative. https://doi.org/10.6073/pasta/26b22d09279e62fd729ffc35f9ef0174 (Accessed 2023-06-07).
+
 
 set up libraries
 
@@ -33,7 +34,9 @@ library(MuMIn)
 
 ## Methods
 
-a\. Sampling Methods
+a. Sampling Methods
+
+To sample the necessary data, two plants from each Sarracenia species were assigned to six feeding levels, with 120 total plants(citation). The design for the feeding levels per feeding ranged from 0-0.25g of ground wasps for small species, 0-0.5g for intermediate sized, and 0-1g for large species (citation). The size above ground and Amass (mass-based light-saturated photosynthetic rate of youngest leaf) was taken before treatments, and then the plants were fed once a week for seven weeks (citation). 
 
 The data was cleaned to get rid of unnecessary characters and to make column names lower case. The columns of interest for predictor variables were then selected (totmass, species, feedlevel, sla, chlorophyll, amass, num_lvs, num_phylls).
 
@@ -48,6 +51,7 @@ plants <- read_csv(here("data", "hf109-01-sarracenia.csv")) %>%
 The missing data was visualized within the Sarracenia data set. The results show that there was missing data for chlorophyll, amass, sla, num_phylls, and num_lvs. The most missing data was in chlorphyll and amass.
 
 ```{r}
+#visualize missing data, add caption, adjust caption
 gg_miss_var(plants)   +
   labs(caption = "Missing Data in the Sarracenia Dataset") +
   theme(plot.caption = element_text(hjust = 0.6))
@@ -56,88 +60,107 @@ gg_miss_var(plants)   +
 Next, a subset of the data was created in which all of the NA values were dropped from the species columns with missing data.
 
 ```{r}
+#subset data and drop NA values
 plant_subset <- plants %>% 
   drop_na(sla, chlorophyll, amass, num_lvs, num_phylls)
 ```
 
-# Creating a correlation plot:
-
-In order to visualize the respective correlation between the subsetted variables, a Pearson's correlation function was conducted and then this was visualized using a correlation plot. There is a high correlation between sla and amass as well as num_phylls and feedlevel. There is not correlation between num_lvs and amass as well as sla and num_phylls.
+In order to visualize the respective correlation between the subsetted variables, a Pearson's correlation function was conducted and then this was visualized using a correlation plot. There is a high correlation between sla and amass as well as num_phylls and feedlevel. There is low correlation between num_lvs and amass as well as sla and num_phylls.
 
 ```{r correlation-plot}
 #Calculate Pearson's r for numerics, columns feet level through numphylls
 plant_correlation <- plant_subset %>% 
   select(feedlevel:num_phylls) %>% 
   cor(method = "pearson")
-
 #Correlation analysis plot and changing shape of cells, negative indicating weak correlation and positive indicating strong correlation
-corrplot(plant_correlation, method = "ellipse", addCoef.col = "black") 
+corrplot(plant_correlation, method = "ellipse", addCoef.col = "black")
+title(sub="Pearson's correlation between Sarracenia characteristics and biomass")
 
+#caption, cannot connect caption argument to corr plot
 labs(caption = "Pearson's correlation between Sarracenia characteristics and biomass")
 ```
 
-Next, a ggpairs plot was created for all columns in the plant subset in order to visualize respective relationships between variables.
+Next, a ggpairs plot was created for all columns in the plant subset in order to visualize respective relationships between variables. The visualization shows that???
 
 ```{r}
 plant_subset %>% 
   select(totmass:num_phylls) %>% 
-  ggpairs() + labs(caption ="?")
+  ggpairs() + labs(caption ="Relationships Between Variables in Sarcenia Dataset")
 ```
 
-We fit multiple linear models to see if the species and the characteristics of them may predict biomass. There was a linear model created for each variable (full) and for a null model to compare it to. The full can be used to test for heteroskedasticity and normality whereas the null is just the basis to compare it to with no predictor variables. 
+We fit multiple linear models to see if the species and the characteristics of them may predict biomass. There was a linear model created for each variable (full) and for a null model to compare it to as the control non-predictor model. The full can be used to test for heteroskedasticity and normality whereas the null is just the basis to compare it to. 
 
 ```{r null-and-full-models}
+#create null linear model from subset where total mass is 1
 null <- lm(totmass ~ 1, data = plant_subset)
+#create full linear model where all of the possible predictor columns are included
 full <- lm(totmass ~ species + feedlevel + sla + chlorophyll + amass + num_lvs + num_phylls, data = plant_subset)
 
+#show outputs
 null 
 full
 ```
+
 Using the linear models we just created, we will plot them using diagnostic plots to look for normality and homoskedasticity of residuals. The visual plots showed non-normality and homoskedasticity because the data in the residuals versus plotted is not evenly and randomly distibuted, there is outliers in the Normal QQ plot, the values is the scale location plot are not randomly and normally distributed, and Cook's model shows outliers are influencing our model. Non-normality was also tested statistically using the Shapiro-Wilk test and heteroskedasticiy was tested for using the Breusch-Pagan test, and both tests showed non-constant error variance and non-normality. 
 
 ```{r full-diagnostics}
+#set parameters for plot, splitting screen
 par(mfrow = c(2, 2))
-plot(full)
+#plot full linear model
+plot(full) 
+#add caption
+labs(caption ="Diagnostics for Full Model")
 
+#check normality and heteroscedasticity statistically
 check_normality(full)
 check_heteroscedasticity(full)
 ```
 
-After finding that the linear model was heteroskedastic and non-normal, used the log function within the linear model in order to make the data normal.
+After finding that the linear model was heteroskedastic and non-normal, used the log function within the linear model in order to create a log transformation of the response variable. This removes the heteroskedasticity in the error and makes the error normally distributed. 
 ```{r model-logs}
+#perform log transformation on null linear model
 null_log <- lm(log(totmass) ~ 1, data = plant_subset)
 
+#perform log transformation on full linear model
 full_log <- lm(log(totmass) ~ species + feedlevel + sla + chlorophyll + amass + num_lvs + num_phylls, data = plant_subset)
 
+#plot the full with log transformation
 plot(full_log)
 
+#check non-normality of the full log 
 check_normality(full_log)
 
+#check heteroscedasticity of the full log 
 check_heteroscedasticity(full_log)
 ```
-try some more models: addressing the question: what set of predictor variables best explains the response?"
 
-Next, more models were created with subsets of the full model in order to see what set of predictor variables best explains the response. Species is included in all subsets because it is the highest predictor variable, and then different combinations were tested for the others based on Pearson's correlation. 
+More models were created with subsets of the full model in order to see what set of predictor variables best explains the response. Species is included in all subsets because it is the highest predictor variable, and then different combinations were tested to see which had the best predicting capacity (based on AIC). 
 
-The models were chosen based on different combinations of correlated values that resulted in lowest AIC. 
+Model 3 contains chlorophyll, feedlevel, and species because they had a high correlation in the Pearson model as well as species because it is necessary (see above). The result had a low prediction value when tested (146) and errors were homoscedastic and normal so the model was kept. 
+
+Model 4 includes species, sla, and amass due to the correlation between the last two variables in pearson's. Since amass and sla are the size of the leaf and the photosynthetic rate it makes sense that they are correlated, and it also showed to be a decent predictor according to the AIC (155). 
+
+Model 5 includes species, chlorophyll, and sla because even though no strong correlation was found between the second two variables, after testing multiple combos this is the lowest AIC value obtained. 
+
 ```{r}
+#shows how good of a predictor variable species is, not used in model discussion, necessary because of VIF
 model2_log <- lm(log(totmass) ~ species, data = plant_subset)
-#shows how good of a predictor variable species 
 
 model3_log <- lm(log(totmass) ~ chlorophyll + feedlevel + species, data = plant_subset) #second best, chlorophyll and feed level had high correlation
 
-model4_log <- model4_log <- lm(log(totmass) ~ species + sla + amass, data = plant_subset) #bc of correlation in perason's 
+model4_log <- lm(log(totmass) ~ species + sla + amass, data = plant_subset) #bc of correlation in perason's 
 
 model5_log <- lm(log(totmass) ~ species + chlorophyll + sla, data = plant_subset) #best, not sure why but it works
 ```
 
-Next, we evaluated multicollinearity of the full log which calculates the variance inflation factor, showing which variables had the most influence on other variables? The species variable shows the highest variable inflation factor. 
+Next, we evaluated multicollinearity of the full log and calculated the variance inflation factor, which shows how much one variable is influenced by the other independent variables. The value for the species is incredibly high so it should be included in each model in order to accurately predict so that it does not deeply impact the regression model. The other variables should not be too much of a cause for concern because they all have VIF values less than 5. 
 
 ```{r calculate-vif}
 #evaluate multicollinearity by calculating variance inflation factor 
 car::vif(full_log)
 ```
-"check assumptions for model 2:"
+
+The 4 models were plotted and also were ran through a normality and homoscedasticity test in order to check our assumptions regarding the normal distribution and homoscedasticity of variance. All of the models passed the checks for being normally distributed and homoscedastic. 
 
 ```{r}
 #plotting log models for sets of predictor variables
@@ -164,7 +187,7 @@ check_normality(model5_log)
 check_heteroscedasticity(model5_log)
 ```
 
-"compare models using Akaike's Information criterion (AIC) values:"
+Models were then compared using Akaike's Information criterion (AIC) values, which gives a gauge of how much a model predicts a given variable, but only in relation to the other variables. 
 
 ```{r}
 AICc(full_log)
@@ -181,10 +204,7 @@ MuMIn::AICc(full_log, model2_log, null_log, model3_log, model4_log, model5_log)
 
 MuMIn::model.sel(full_log, model2_log, null_log, model3_log, model4_log, model5_log)
 ```
-
-Using the AIC, we compared models and chose the value with the lowest value which was model 5. The actual lowest value was full log but since we wanted a subset of models this was the lowest? 
-
-We found that the model 5 including species, chlorophyll, and sla predictors best predicted biomass. 
+Using the AIC, we compared models and chose the value with the lowest value which was model 5. The actual lowest value was full log but since we wanted a subset of models that has the lowest explanatory values, model 5 is the best choice. Model 3 and Model 4 also have low values to predict biomass but strong as good as 5. The null value for AIC serves as a control for when nothing is predicted to compare to, and with model 2 also having a small value we can see that species is very important in biomass prediction. 
 
 ```{r}
 summary(full_log)
